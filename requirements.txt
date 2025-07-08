@@ -1,0 +1,8 @@
+streamlit
+langchain
+langchain-ollama
+langchain-groq
+langchain-core
+langchain-community
+fastapi
+uvicorn
