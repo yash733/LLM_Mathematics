@@ -5,7 +5,7 @@ import os,sys
 
 # ---------- #
 from src.backend.configuration.config import Config
-from src.schema import GroqConfigRequest, OllamaConfigRequest, ModelStatusCheck, State
+from src.schema import GroqConfigRequest, OllamaConfigRequest, ModelStatusCheck, User_Message, Model_Answer
 from src.backend.model import Model
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
@@ -30,21 +30,23 @@ async def get_model_provider():
 
 @app.get("/model/{provider}")
 async def get_model(provider: str):
+    # Models within each Providers
     try:
         if provider == 'groq':
-            return {'groq models':Config.get_groq_model()} # if no details found in config then except will handel it
+            return {'models' : Config.get_groq_model()} # if no details found in config then except will handel it
         
         elif provider == 'ollama':
-            models = Config.get_ollama_model()
-            return {'ollama models':models}
+            return {'models' : Config.get_ollama_model()}
         
         else:
             raise HTTPException(status_code=400, detail='Model Provider does not exists')
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Model selcted was not found: {str(e)}")
     
 @app.post("/groq/model", response_model=ModelStatusCheck)
 async def groq_model_test(request: GroqConfigRequest):
+    # Check model Connected? Save model call instace.
     try:
         global current_model, current_config
         model = Model.get_groq(request.api_key, request.model_name)
@@ -54,13 +56,15 @@ async def groq_model_test(request: GroqConfigRequest):
         current_model = model
         current_config = {
             "provider": "groq",
-            "model_name": request.model_name
+            "model_name": request.model_name,
+            "key": "..."+request.api_key[-6:]
         }
 
         return {
             "success" : True,
             "message" : "Groq is Connecetd",
-            "output" : str(test_responce.content)
+            "output" : str(test_responce.content),
+            "config" : current_config
         }
     
     except Exception as e:
@@ -83,7 +87,8 @@ async def ollama_model_test(request: OllamaConfigRequest):
         return{
             "success" : True,
             "message" : "Ollama is Connected",
-            "output" : str(test_responce.content)
+            "output" : str(test_responce.content),
+            "config" : current_config
         }
     
     except Exception as e:
@@ -111,3 +116,23 @@ async def reset_config():
     current_config = {}
     
     return {"message": "Configuration reset successfully"}
+
+@app.post("/invoke", response_model=Model_Answer)
+async def chat(request:User_Message):
+    global current_model
+    
+    if not current_model:
+        raise HTTPException(status_code=400, detail="No model configured. Please configure a model first.")
+    
+    try:
+        response = current_model.invoke(request.message)
+        return {
+            "response" : response,
+            "success" : True
+        }
+    except Exception as e:
+        return {
+            "response" : "",
+            "success" : False,
+            "error_message" : f"Error generating response: {str(e)}"
+        }

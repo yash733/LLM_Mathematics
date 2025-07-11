@@ -19,3 +19,11 @@ class ModelStatusCheck(BaseModel):
     success: bool
     message : str
     output : str
+
+class User_Message(BaseModel):
+    message : str
+
+class Model_Answer(BaseModel):
+    response : str
+    success : bool
+    error_message : Optional[str] = None
