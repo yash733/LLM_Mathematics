@@ -19,6 +19,7 @@ class ModelStatusCheck(BaseModel):
     success: bool
     message : str
     output : str
+    config : Dict[str, Any]
 
 class User_Message(BaseModel):
     message : str

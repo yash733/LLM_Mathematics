@@ -32,10 +32,10 @@ async def get_model_provider():
 async def get_model(provider: str):
     # Models within each Providers
     try:
-        if provider == 'groq':
+        if provider == 'GROQ':
             return {'models' : Config.get_groq_model()} # if no details found in config then except will handel it
         
-        elif provider == 'ollama':
+        elif provider == 'OLLAMA':
             return {'models' : Config.get_ollama_model()}
         
         else:
@@ -107,7 +107,7 @@ async def get_current_model_config():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected Error occured at server side")
 
-@app.delete("/config")
+@app.delete("/config_reset")
 async def reset_config():
     """Reset the current configuration"""
     global current_model, current_config

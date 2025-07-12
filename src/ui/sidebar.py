@@ -12,6 +12,9 @@ if not "message_history" in st.session_state:
 
 if not "current_config" in st.session_state:
     st.session_state.current_config = {}
+
+if not 'config_saved' in st.session_state:
+    st.session_state.config_saved = False
 # ------------
 
 # Get Model Providers
@@ -23,7 +26,7 @@ def model_provider():
         else:
             st.error("Un-anble to fetch provider")
     except requests.exceptions.RequestException as e:
-        st.error(f"Connection error: {e}")
+        st.error(f"Connection error --> /provider?: {e}")
         return []
 
 # Get Models Provided by the Providers
@@ -35,7 +38,7 @@ def models_from_provider(provider):
         else:
             st.error("Un-anble to fetch models")
     except requests.exceptions.RequestException as e:
-        st.error(f"Connection error: {e}")
+        st.error(f"Connection error --> /model/provider?: {e}")
         return []
 
 # Gettinig Model Instance Initialization
@@ -54,7 +57,7 @@ def configure_groq(api_key, model_name):
             return False
 
     except requests.exceptions.RequestException as e:
-        st.error(f"Connection error: {e}")
+        st.error(f"Connection error --> /groq/model?: {e}")
         return []
 
 def configure_ollama(model_name):
@@ -64,13 +67,13 @@ def configure_ollama(model_name):
         }
         response = requests.post(f"{API_BASE_URL}/ollama/model", json=payload)
         if response.status_code == 200:
-            st.session_state.current_config = {"model_detail" : response.json()["config"]}
+            st.session_state.current_config = {"model_detail" : response.json()}
             return True
         else:
             st.error("Error Occured Unable to get Slected Model, from Provider")
             return False
     except Exception as e:
-        st.error(f"Connection error: {e}")
+        st.error(f"Connection error --> /ollama/model?: {e}")
         return []
     
 def get_model():
@@ -82,21 +85,24 @@ def get_model():
         else:
             return False
     except Exception as e:
-        st.error(f"Connection error: {e}")
+        st.error(f"Connection error --> /model_config?: {e}")
         return []
 
 
-def sidebar():
+def sidebar_():
     with st.sidebar:
-        Provider_selected = st.selectbox(label="Choose a Model Provider: ", options=model_provider()) #GROQ, OLLAMA
-        if Provider_selected:
+        if st.session_state.config_saved == False:
+            Provider_selected = st.selectbox(label="Choose a Model Provider: ", options=model_provider()) #GROQ, OLLAMA
             if Provider_selected == "GROQ":
                 Model_selected = st.selectbox(label="Choose a Model: ", options=models_from_provider(Provider_selected)) #List of Models with each Provider
                 if Model_selected:
                     api = st.text_input(label="API Key: ", type="password").strip()
                     if api and st.button('Save', key="Model from Provider Groq"):
-                        if not configure_groq(api, Model_selected):
-                            st.stop()
+                        with st.spinner("Model Connection Testing"):
+                            if not configure_groq(api, Model_selected):
+                                st.stop()
+                            # else:
+                            #     st.rerun()
                     else:
                         st.warning("⚠️ Please enter your GROQ API key to proceed. Don't have? refer : https://console.groq.com/keys ")
                         st.stop()
@@ -106,12 +112,31 @@ def sidebar():
 
             elif Provider_selected == "OLLAMA":
                 Model_selected = st.selectbox(label="Choose a Model: ", options=models_from_provider(Provider_selected))
-                if Model_selected:
+                if Model_selected and st.button("Setup Connection", key = "Ollama model connection"):
                     # Model call and test
-                    if not configure_ollama(Model_selected):
-                        st.stop()
-            else:
-                st.error("Error 400, Model Provider Selected in present")
-        else:
-            st.stop()
-        
+                    with st.spinner("Model Connection Testing"):
+                        if not configure_ollama(Model_selected):
+                            st.stop()
+                        # else:
+                        #     st.rerun()
+                else:
+                    st.stop()
+
+        elif st.session_state.config_saved:
+            st.markdown("### Selected Configuration")
+            st.write(f"**Model**: {st.session_state.user_config['model']}")
+            st.write(f"**Model Type**: {st.session_state.user_config['llm_model']}")
+
+            if st.button('Reset Config'):
+                response = requests.delete(f"{API_BASE_URL}/config_reset")
+                st.success(response.json()['message'])
+                st.session_state.selection = {}
+                st.session_state.message_history = []
+                st.session_state.current_config = {}
+                st.session_state.config_saved = False
+                st.rerun()
+
+        with st.expander(label="Meta Data"):
+            st.write("current_config: ",st.session_state.current_config)
+            st.write("selection: ",st.session_state.selection)
+            st.write("message_history: ",st.session_state.message_history)
