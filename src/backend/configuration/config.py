@@ -8,18 +8,18 @@ class Config:
     with open(config_path, encoding='utf-8') as f:
         config_info.read_file(f)
 
-    @classmethod
-    def get_llm(cls):
-        return cls.config_info['DEFAULT'].get('LLM').split(', ')
+    @staticmethod
+    def get_llm():
+        return Config.config_info['DEFAULT'].get('LLM').split(', ')
     
-    @classmethod
-    def get_groq_model(cls):
-        return cls.config_info['DEFAULT'].get('LLM_GROQ').split(', ')
+    @staticmethod
+    def get_groq_model():
+        return Config.config_info['DEFAULT'].get('LLM_GROQ').split(', ')
     
-    @classmethod
-    def get_ollama_model(cls):
-        return cls.config_info['DEFAULT'].get('LLM_OLLAMA').split(', ')
+    @staticmethod
+    def get_ollama_model():
+        return Config.config_info['DEFAULT'].get('LLM_OLLAMA').split(', ')
     
-    @classmethod
-    def get_options(cls):
-        return cls.config_info['DEFAULT'].get('OPTIONS').split(', ')
+    @staticmethod
+    def get_options():
+        return Config.config_info['DEFAULT'].get('OPTIONS').split(', ')
