@@ -22,7 +22,8 @@ class ModelStatusCheck(BaseModel):
     config : Dict[str, Any]
 
 class User_Message(BaseModel):
-    message : str
+    user_message : str
+    user_model : Any
 
 class Model_Answer(BaseModel):
     response : str

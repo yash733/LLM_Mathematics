@@ -53,7 +53,7 @@ def configure_groq(api_key, model_name):
             st.session_state.current_config = {"model_detail" : response.json()["config"]}
             return True
         else:
-            st.error("Error Occured Unable to get Slected Model, from Provider")
+            st.error("Error Occured Unable to get Selected Model, from Provider")
             return False
 
     except requests.exceptions.RequestException as e:

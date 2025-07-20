@@ -6,3 +6,5 @@ langchain-core
 langchain-community
 fastapi
 uvicorn
+langgraph
+sympy

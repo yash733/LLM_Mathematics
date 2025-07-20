@@ -6,11 +6,12 @@ from langchain_groq import ChatGroq
 import streamlit as st
 
 class Model:
+    """Testing Proper if connection is istablished with Model and Provider Correctly"""
     def get_groq(api_key, model):
         try:
             model_instance = ChatGroq(model=model,api_key=api_key)
-            model_instance.invoke('testing connection')
-            return model_instance
+            test_responce = model.invoke('Testing Connection')
+            return model_instance, test_responce
         except Exception as e:
             st.warning('⚠️ Enter Correct API Key to Proceed')
             st.error(f"Authentication Error: {str(e)}")
@@ -19,8 +20,8 @@ class Model:
     def get_ollama(model):
         try:
             model_instance = ChatOllama(model=model)
-            model_instance.invoke('testing connection')
-            return model_instance
+            test_responce = model.invoke('Testing Connection')
+            return model_instance, test_responce
         except Exception as e:
             st.warning('⚠️ Un able to stance connection with Ollama')
             st.error(f"Error: {str(e)}")

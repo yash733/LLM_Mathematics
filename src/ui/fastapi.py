@@ -21,6 +21,7 @@ async def root():
 
 @app.get("/provider")
 async def get_model_provider():
+    """Get list of all the LLM Providers"""
     try:
         models = Config.get_llm()
         if models:
@@ -30,7 +31,7 @@ async def get_model_provider():
 
 @app.get("/model/{provider}")
 async def get_model(provider: str):
-    # Models within each Providers
+    """Get list of Models Provided by LLM Provider Selceted"""
     try:
         if provider == 'GROQ':
             return {'models' : Config.get_groq_model()} # if no details found in config then except will handel it
@@ -46,11 +47,10 @@ async def get_model(provider: str):
     
 @app.post("/groq/model", response_model=ModelStatusCheck)
 async def groq_model_test(request: GroqConfigRequest):
-    # Check model Connected? Save model call instace.
+    """Check model Connected? Save model call instace."""
     try:
         global current_model, current_config
-        model = Model.get_groq(request.api_key, request.model_name)
-        test_responce = model.invoke('Testing Connection')
+        model, test_responce = Model.get_groq(request.api_key, request.model_name)
 
         # model works so storing it 
         current_model = model
@@ -72,10 +72,10 @@ async def groq_model_test(request: GroqConfigRequest):
     
 @app.post("/ollama/model", response_model=ModelStatusCheck)
 async def ollama_model_test(request: OllamaConfigRequest):
+    """Check model Connected? Save model call instace."""
     try:
         global current_config, current_model
-        model = Model.get_ollama(request.model_name)
-        test_responce = model.invoke('Testing Connection')
+        model, test_responce = Model.get_ollama(request.model_name)
 
         # model save
         current_model = model
@@ -96,6 +96,7 @@ async def ollama_model_test(request: OllamaConfigRequest):
 
 @app.get("/model_config")
 async def get_current_model_config():
+    """Current Model status, configuration detail"""
     try:
         global current_config, current_model
 
@@ -107,9 +108,15 @@ async def get_current_model_config():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected Error occured at server side")
 
+@app.get("/current_model")
+async def get_current_model():
+    """Get Current Model Instance"""
+    global current_model
+    return {'current_model': current_model}
+
 @app.delete("/config_reset")
 async def reset_config():
-    """Reset the current configuration"""
+    """Reset the current configuration and model detail"""
     global current_model, current_config
     
     current_model = None
@@ -122,10 +129,10 @@ async def chat(request:User_Message):
     global current_model
     
     if not current_model:
-        raise HTTPException(status_code=400, detail="No model configured. Please configure a model first.")
+        raise HTTPException(status_code=400, detail="[chat] No model configured. Please configure a model first.")
     
     try:
-        response = current_model.invoke(request.message)
+        response = request.user_model.invoke(request.user_message)
         return {
             "response" : response,
             "success" : True
