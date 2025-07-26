@@ -1,21 +1,11 @@
 import streamlit as st
 import json, requests
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
+# ------------------------------------ #
 API_BASE_URL = "http://127.0.0.1:8000/"
-
-# -----------
-if not "selection" in st.session_state:
-    st.session_state.selection = {}
-
-if not "message_history" in st.session_state:
-    st.session_state.message_history = []
-
-if not "current_config" in st.session_state:
-    st.session_state.current_config = {}
-
-if not 'config_saved' in st.session_state:
-    st.session_state.config_saved = False
-# ------------
+# ------------------------------------ #
 
 # Get Model Providers
 def model_provider():
@@ -53,7 +43,7 @@ def configure_groq(api_key, model_name):
             st.session_state.current_config = {"model_detail" : response.json()["config"]}
             return True
         else:
-            st.error("Error Occured Unable to get Selected Model, from Provider")
+            st.error(f"Error Occured Unable to get Selected Model, from Provider {response}")
             return False
 
     except requests.exceptions.RequestException as e:
@@ -91,41 +81,10 @@ def get_model():
 
 def sidebar_():
     with st.sidebar:
-        if st.session_state.config_saved == False:
-            Provider_selected = st.selectbox(label="Choose a Model Provider: ", options=model_provider()) #GROQ, OLLAMA
-            if Provider_selected == "GROQ":
-                Model_selected = st.selectbox(label="Choose a Model: ", options=models_from_provider(Provider_selected)) #List of Models with each Provider
-                if Model_selected:
-                    api = st.text_input(label="API Key: ", type="password").strip()
-                    if api and st.button('Save', key="Model from Provider Groq"):
-                        with st.spinner("Model Connection Testing"):
-                            if not configure_groq(api, Model_selected):
-                                st.stop()
-                            # else:
-                            #     st.rerun()
-                    else:
-                        st.warning("⚠️ Please enter your GROQ API key to proceed. Don't have? refer : https://console.groq.com/keys ")
-                        st.stop()
-                else:
-                    st.warning("Select a Model to preceed further")
-                    st.stop()
-
-            elif Provider_selected == "OLLAMA":
-                Model_selected = st.selectbox(label="Choose a Model: ", options=models_from_provider(Provider_selected))
-                if Model_selected and st.button("Setup Connection", key = "Ollama model connection"):
-                    # Model call and test
-                    with st.spinner("Model Connection Testing"):
-                        if not configure_ollama(Model_selected):
-                            st.stop()
-                        # else:
-                        #     st.rerun()
-                else:
-                    st.stop()
-
-        elif st.session_state.config_saved:
+        if st.session_state.config_saved:
             st.markdown("### Selected Configuration")
-            st.write(f"**Model**: {st.session_state.user_config['model']}")
-            st.write(f"**Model Type**: {st.session_state.user_config['llm_model']}")
+            st.write(f"**Model**: {st.session_state.current_config['model_detail']['config']['provider']}")
+            st.write(f"**Model Type**: {st.session_state.current_config['model_detail']['config']['model_name']}")
 
             if st.button('Reset Config'):
                 response = requests.delete(f"{API_BASE_URL}/config_reset")
@@ -136,7 +95,42 @@ def sidebar_():
                 st.session_state.config_saved = False
                 st.rerun()
 
-        with st.expander(label="Meta Data"):
-            st.write("current_config: ",st.session_state.current_config)
-            st.write("selection: ",st.session_state.selection)
-            st.write("message_history: ",st.session_state.message_history)
+            with st.expander(label="Meta Data"):
+                st.write("current_config: ",st.session_state.current_config)
+                st.write("selection: ",st.session_state.selection)
+                st.write("message_history: ",st.session_state.message_history)
+
+        elif st.session_state.config_saved == False:
+            Provider_selected = st.selectbox(label="Choose a Model Provider: ", options=model_provider()) #GROQ, OLLAMA
+            if Provider_selected == "GROQ":
+                Model_selected = st.selectbox(label="Choose a Model: ", options=models_from_provider(Provider_selected)) #List of Models with each Provider
+                if Model_selected:
+                    api = st.text_input(label="API Key: ", type="password").strip()
+                    if api and st.button('Save', key="Model from Provider Groq"):
+                        with st.spinner("Model Connection Testing"):
+                            if configure_groq(api, Model_selected):
+                                st.session_state.config_saved = True
+                                st.rerun()
+                            else:
+                                st.stop()
+                    else:
+                        st.warning("⚠️ Please enter your GROQ API key to proceed. Don't have? refer : https://console.groq.com/keys ")
+                        st.stop()
+                else:
+                    st.warning("Select a Model to preceed further")
+                    st.stop()
+
+            elif Provider_selected == "OLLAMA":
+                Model_selected = str(st.selectbox(label="Choose a Model: ", options=models_from_provider(Provider_selected))) #List of Models with each Provider
+                if Model_selected and st.button("Setup Connection", key = "Ollama model connection"):
+                    # Model call and test
+                    with st.spinner("Model Connection Testing"):
+                        if configure_ollama(Model_selected):
+                            st.session_state.config_saved = True
+                            st.rerun()
+                        else:
+                            st.stop()
+                else:
+                    st.stop()
+
+        

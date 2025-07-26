@@ -10,7 +10,7 @@ class Model:
     def get_groq(api_key, model):
         try:
             model_instance = ChatGroq(model=model,api_key=api_key)
-            test_responce = model.invoke('Testing Connection')
+            test_responce = model_instance.invoke('Testing Connection')
             return model_instance, test_responce
         except Exception as e:
             st.warning('⚠️ Enter Correct API Key to Proceed')
@@ -20,7 +20,7 @@ class Model:
     def get_ollama(model):
         try:
             model_instance = ChatOllama(model=model)
-            test_responce = model.invoke('Testing Connection')
+            test_responce = model_instance.invoke('Testing Connection')
             return model_instance, test_responce
         except Exception as e:
             st.warning('⚠️ Un able to stance connection with Ollama')

@@ -1,6 +1,10 @@
 import streamlit as st
+import os,sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 def readme_():
+
     st.markdown("""
                 ### Install Dependencies
                     - `pip install uv`

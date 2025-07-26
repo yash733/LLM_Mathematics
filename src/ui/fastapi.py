@@ -2,13 +2,13 @@ from fastapi import FastAPI, HTTPException
 import uvicorn
 import streamlit as st
 import os,sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 # ---------- #
 from src.backend.configuration.config import Config
 from src.schema import GroqConfigRequest, OllamaConfigRequest, ModelStatusCheck, User_Message, Model_Answer
 from src.backend.model import Model
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 app = FastAPI(title="LLM for Mathematics", version="0.0.1")
 
@@ -31,7 +31,7 @@ async def get_model_provider():
 
 @app.get("/model/{provider}")
 async def get_model(provider: str):
-    """Get list of Models Provided by LLM Provider Selceted"""
+    """Get list of Models Provided by LLM Provider Selected"""
     try:
         if provider == 'GROQ':
             return {'models' : Config.get_groq_model()} # if no details found in config then except will handel it

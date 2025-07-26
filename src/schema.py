@@ -1,12 +1,16 @@
 from pydantic import BaseModel, Field
 from typing import Annotated, Optional, TypedDict, Dict, Any
+from operator import add
+import os,sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 class State(TypedDict):
     model : str
     user_input : str
-    responsce : str
+    response : str
     provider : str
     provider_model : str
+    message_history : Annotated[Any,add]
 
 class GroqConfigRequest(BaseModel):
     api_key: str = Field(..., description="Groq API key to access GROQ")

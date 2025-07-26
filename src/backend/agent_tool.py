@@ -4,10 +4,14 @@ from langchain.agents import Tool
 from langchain_community.utilities import WikipediaAPIWrapper
 import sympy as sp
 from sympy import symbols, solve, diff, integrate, simplify, expand, factor
+from src.schema import State
+from langchain_core.prompts import PromptTemplate
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.prebuilt import tools_condition, ToolNode
 
-def wikipedia_tool():
+def wikipedia_tool(query: str):
     wikipedia_wrapper = WikipediaAPIWrapper()
-    return wikipedia_wrapper
+    return wikipedia_wrapper.run(query)
 
 def sympy_calculator(expression):
     """
@@ -60,7 +64,7 @@ def sympy_calculator(expression):
     except Exception as e:
         return f"Error: {str(e)}"
 
-def tools():
+def tool_node():
     tools_ = [
         Tool(name='wikipedia',
             func=wikipedia_tool,
@@ -73,3 +77,35 @@ def tools():
                             Examples: 'solve(x**2 - 4, x)', 'diff(x**3 + 2*x, x)', 'integrate(x**2, x)'""")
             ]
     return tools_
+
+def LLM(state: State):
+    prompt = PromptTemplate(template="""
+                                        Your a agent tasked for solving users mathemtical question. Logically arrive at the solution and provide a detailed explanation
+                                        and display it point wise for the question below
+                                        Question:{question}
+                                        Answer:                                
+                                    """,
+                            input_variables=['question']
+                            )
+    prompt_=prompt.format(question=state.get['user_input'])
+    tools_ = tool_node()
+    model_with_tool = state.model.bind_tools(tools_, parallel_tool_calls = False)
+    response = model_with_tool.invoke(prompt_)
+
+    return {'response':response, 'message_history':response}     
+
+def graph(state: State):
+    tool_ = tool_node()
+    graph = (
+        StateGraph(state)
+        .add_node('LLM',LLM)
+        .add_node('Tool_Node',ToolNode(tool_))
+
+        .add_edge(START, 'LLM')
+        .add_conditional_edges('LLM',tools_condition) # Tool_call Yes --> Tool_Node | NO --> END 
+        .add_edge('Tool_Node','LLM')
+        
+        .compile(checkpointer = MemorySaver())
+        )
+    
+    return graph
