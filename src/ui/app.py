@@ -6,15 +6,18 @@ import streamlit as st
 from sidebar import sidebar_
 # from page_1 import readme_
 from page_2 import page_2_ui
-# ------------------------------------------- #
-if not "selection" in st.session_state:
-    st.session_state.selection = {}
 
-if not "message_history" in st.session_state:
-    st.session_state.message_history = []
+# if not "selection" in st.session_state:
+#     st.session_state.selection = {}
 
 if not "current_config" in st.session_state:
     st.session_state.current_config = {}
+
+if "config" not in st.session_state:
+    st.session_state.config = ''
+
+if not "message_history" in st.session_state:
+    st.session_state.message_history = []
 
 if not 'config_saved' in st.session_state:
     st.session_state.config_saved = False

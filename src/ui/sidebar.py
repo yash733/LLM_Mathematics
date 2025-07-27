@@ -1,5 +1,5 @@
 import streamlit as st
-import json, requests
+import requests
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
@@ -82,23 +82,25 @@ def get_model():
 def sidebar_():
     with st.sidebar:
         if st.session_state.config_saved:
-            st.markdown("### Selected Configuration")
+            st.markdown("## Selected Configuration: ")
             st.write(f"**Model**: {st.session_state.current_config['model_detail']['config']['provider']}")
             st.write(f"**Model Type**: {st.session_state.current_config['model_detail']['config']['model_name']}")
-
+            
             if st.button('Reset Config'):
                 response = requests.delete(f"{API_BASE_URL}/config_reset")
                 st.success(response.json()['message'])
                 st.session_state.selection = {}
                 st.session_state.message_history = []
+                st.session_state.config = ''
                 st.session_state.current_config = {}
                 st.session_state.config_saved = False
                 st.rerun()
 
             with st.expander(label="Meta Data"):
                 st.write("current_config: ",st.session_state.current_config)
-                st.write("selection: ",st.session_state.selection)
+                # st.write("selection: ",st.session_state.selection)
                 st.write("message_history: ",st.session_state.message_history)
+                st.write('config: ',st.session_state.config)
 
         elif st.session_state.config_saved == False:
             Provider_selected = st.selectbox(label="Choose a Model Provider: ", options=model_provider()) #GROQ, OLLAMA

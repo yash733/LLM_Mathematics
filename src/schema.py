@@ -5,7 +5,6 @@ import os,sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 class State(TypedDict):
-    model : str
     user_input : str
     response : str
     provider : str
@@ -26,8 +25,9 @@ class ModelStatusCheck(BaseModel):
     config : Dict[str, Any]
 
 class User_Message(BaseModel):
-    user_message : str
+    user_input : str
     user_model : Any
+    config : str
 
 class Model_Answer(BaseModel):
     response : str

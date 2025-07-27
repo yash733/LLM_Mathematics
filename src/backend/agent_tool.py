@@ -8,10 +8,11 @@ from src.schema import State
 from langchain_core.prompts import PromptTemplate
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import tools_condition, ToolNode
+import streamlit as st
 
-def wikipedia_tool(query: str):
+def wikipedia_tool():
     wikipedia_wrapper = WikipediaAPIWrapper()
-    return wikipedia_wrapper.run(query)
+    return wikipedia_wrapper
 
 def sympy_calculator(expression):
     """
@@ -89,15 +90,17 @@ def LLM(state: State):
                             )
     prompt_=prompt.format(question=state.get['user_input'])
     tools_ = tool_node()
-    model_with_tool = state.model.bind_tools(tools_, parallel_tool_calls = False)
+    model = st.session_state.model
+    
+    model_with_tool = model.bind_tools(tools_, parallel_tool_calls = False)
     response = model_with_tool.invoke(prompt_)
 
     return {'response':response, 'message_history':response}     
 
-def graph(state: State):
+def graph():
     tool_ = tool_node()
     graph = (
-        StateGraph(state)
+        StateGraph(State)
         .add_node('LLM',LLM)
         .add_node('Tool_Node',ToolNode(tool_))
 

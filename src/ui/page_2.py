@@ -1,9 +1,7 @@
 import streamlit as st
 import json, requests
-from langchain.prompts import PromptTemplate
-from langchain_core.prompts import AIMessagePromptTemplate
-from schema import State
-from langchain.callbacks import StreamlitCallbackHandler
+# from langchain.callbacks import StreamlitCallbackHandler
+from datetime import datetime
 
 import os ,sys 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
@@ -25,22 +23,24 @@ def get_current_model():
         st.error("[page_2|get_current_model] Model instance is not available")
         st.stop()
 
-def get_llm_response(model, query):
+def get_llm_response(model, query, config):
     payload = {
         "user_model":model,
-        "user_message":query
+        "user_input":query,
+        "config":config
     }
     response = requests.post(f"{API_BASE_URL}/invoke",json=payload)
     if response.status_code==200:
         return response.json()
     else:
-        st.error("[page_2|get_llm_response] Could not generate response for your Query")
+        st.error(f"[page_2|get_llm_response] Could not generate response for your Query {response}")
         st.stop()
 
 def page_2_ui():
     get_current_model()
 
-    st.session_state.message_history = [{"role":"assistant","content":"Hi, I'm a MAth chatbot who can answer all your maths questions"}]
+    if st.session_state.message_history == []:
+        st.session_state.message_history = [{"role":"assistant","content":"Hi, I'm a MAth chatbot who can answer all your maths questions"}]
 
     for msg in st.session_state.message_history:
         st.chat_message(msg['role']).write(msg['content'])
@@ -50,14 +50,17 @@ def page_2_ui():
         with st.spinner("Generating Response"):
             st.chat_message('human').write(query) # Display human message 
             
+            # st_callback = StreamlitCallbackHandler(st.container())
+            if st.session_state.config == '':
+                st.session_state.config = {'configurable': {'thread_id': f'{datetime.now()}'}}
             # Get LLM Response
-            result = get_llm_response(model=st.session_state.model, query=query)
-
+            print('model: ',st.session_state.model, '\nquery: ',query, '\nconfig',st.session_state.config)
+            result = get_llm_response(model=st.session_state.model, query=query, config = st.session_state.config)
+            
             st.chat_message('ai').write(result.get('content'))
             st.session_state.message_history.extend([{'role':'human', 'content':query},
                                             {'role':'ai','content':result['response']}])
-            
-            StreamlitCallbackHandler(st.container())
+            st.rerun()
             
     else:
         st.error("Please add a question into to proceed further.")

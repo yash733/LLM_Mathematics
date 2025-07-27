@@ -103,10 +103,10 @@ async def get_current_model_config():
         if not current_model:
             raise HTTPException(status_code=400, detail="No model configured")
         
-        return {"config": current_config, "model_ready": True}
+        return {"config": current_config, "model_ready": True, 'model': current_model}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected Error occured at server side")
+        raise HTTPException(status_code=500, detail=f"Unexpected Error occured at server side {e}")
 
 @app.get("/current_model")
 async def get_current_model():
@@ -124,15 +124,12 @@ async def reset_config():
     
     return {"message": "Configuration reset successfully"}
 
+from src.backend.agent_tool import graph
 @app.post("/invoke", response_model=Model_Answer)
 async def chat(request:User_Message):
-    global current_model
-    
-    if not current_model:
-        raise HTTPException(status_code=400, detail="[chat] No model configured. Please configure a model first.")
-    
     try:
-        response = request.user_model.invoke(request.user_message)
+        workflow = graph()
+        response = workflow.invoke(input={'user_input':request.user_input},config= request.config)
         return {
             "response" : response,
             "success" : True
