@@ -9,7 +9,7 @@ class State(TypedDict):
     response : str
     provider : str
     provider_model : str
-    message_history : Annotated[Any,add]
+    messages : Annotated[list[Any],add]
 
 class GroqConfigRequest(BaseModel):
     api_key: str = Field(..., description="Groq API key to access GROQ")
@@ -26,8 +26,8 @@ class ModelStatusCheck(BaseModel):
 
 class User_Message(BaseModel):
     user_input : str
-    user_model : Any
-    config : str
+    # user_model : Any
+    config : Dict
 
 class Model_Answer(BaseModel):
     response : str

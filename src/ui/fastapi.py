@@ -103,7 +103,7 @@ async def get_current_model_config():
         if not current_model:
             raise HTTPException(status_code=400, detail="No model configured")
         
-        return {"config": current_config, "model_ready": True, 'model': current_model}
+        return {"config": current_config, "model_ready": True}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected Error occured at server side {e}")
@@ -130,11 +130,14 @@ async def chat(request:User_Message):
     try:
         workflow = graph()
         response = workflow.invoke(input={'user_input':request.user_input},config= request.config)
+        print(f'[/invoke] user_input: {request.user_input} \t config: {request.config}')
+        print(f'[/invoke] response: {response}')
         return {
             "response" : response,
             "success" : True
         }
     except Exception as e:
+        print(f'[/invoke] {e}')
         return {
             "response" : "",
             "success" : False,

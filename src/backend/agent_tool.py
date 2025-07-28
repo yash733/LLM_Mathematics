@@ -1,13 +1,12 @@
 from langgraph.graph import StateGraph, START, END
 from langchain_core.tools import Tool
-from langchain.agents import Tool
 from langchain_community.utilities import WikipediaAPIWrapper
 import sympy as sp
 from sympy import symbols, solve, diff, integrate, simplify, expand, factor
 from src.schema import State
 from langchain_core.prompts import PromptTemplate
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.prebuilt import tools_condition, ToolNode
+from langgraph.prebuilt import ToolNode
 import streamlit as st
 
 def wikipedia_tool():
@@ -65,8 +64,8 @@ def sympy_calculator(expression):
     except Exception as e:
         return f"Error: {str(e)}"
 
-def tool_node():
-    tools_ = [
+def get_tools():
+    tools = [
         Tool(name='wikipedia',
             func=wikipedia_tool,
             description="A tool for searching the Internet to find the vatious information on the topics mentioned"),
@@ -77,7 +76,8 @@ def tool_node():
                             Use standard SymPy syntax. Variables x, y, z, t are predefined.
                             Examples: 'solve(x**2 - 4, x)', 'diff(x**3 + 2*x, x)', 'integrate(x**2, x)'""")
             ]
-    return tools_
+    print(f'[Tools] {tools}')
+    return tools
 
 def LLM(state: State):
     prompt = PromptTemplate(template="""
@@ -89,23 +89,34 @@ def LLM(state: State):
                             input_variables=['question']
                             )
     prompt_=prompt.format(question=state.get['user_input'])
-    tools_ = tool_node()
+    state['messages'] = prompt_
+    
+    tools = get_tools()
     model = st.session_state.model
     
-    model_with_tool = model.bind_tools(tools_, parallel_tool_calls = False)
+    model_with_tool = model.bind_tools(tools)
     response = model_with_tool.invoke(prompt_)
 
+    print(f'[LLM] {response}')
     return {'response':response, 'message_history':response}     
 
+def custome_tool_node(state: State):
+    if hasattr(state.get('message_history')[-1], 'tool_calls'):
+        return ToolNode
+    else:
+        END
+        
+
 def graph():
-    tool_ = tool_node()
+    tools = get_tools()
+    print('[graph execution]')
     graph = (
         StateGraph(State)
         .add_node('LLM',LLM)
-        .add_node('Tool_Node',ToolNode(tool_))
+        .add_node('Tool_Node',ToolNode(tools))
 
         .add_edge(START, 'LLM')
-        .add_conditional_edges('LLM',tools_condition) # Tool_call Yes --> Tool_Node | NO --> END 
+        .add_conditional_edges('LLM',custome_tool_node) # Tool_call Yes --> Tool_Node | NO --> END 
         .add_edge('Tool_Node','LLM')
         
         .compile(checkpointer = MemorySaver())
