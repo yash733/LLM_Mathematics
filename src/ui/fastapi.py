@@ -8,7 +8,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 from src.backend.configuration.config import Config
 from src.schema import GroqConfigRequest, OllamaConfigRequest, ModelStatusCheck, User_Message, Model_Answer
 from src.backend.model import Model
+from log.logger import logging
 
+# ---- Log ---- #
+log = logging.getLogger('FastAPI')
+log.setLevel(logging.DEBUG)
 
 app = FastAPI(title="LLM for Mathematics", version="0.0.1")
 
@@ -25,6 +29,7 @@ async def get_model_provider():
     try:
         models = Config.get_llm()
         if models:
+            log.info(f'[/provider] {models}') #log
             return {"models providers":models}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"No provider found in the server: {str(e)}")
@@ -33,6 +38,7 @@ async def get_model_provider():
 async def get_model(provider: str):
     """Get list of Models Provided by LLM Provider Selected"""
     try:
+        log.info(f'[/model/{provider}]') # log
         if provider == 'GROQ':
             return {'models' : Config.get_groq_model()} # if no details found in config then except will handel it
         
@@ -60,6 +66,8 @@ async def groq_model_test(request: GroqConfigRequest):
             "key": "..."+request.api_key[-6:]
         }
 
+        log.info(f'[/groq/model] ModelName: {request.model_name} \nTest Response: {test_responce.content}')  # Log
+
         return {
             "success" : True,
             "message" : "Groq is Connecetd",
@@ -68,6 +76,7 @@ async def groq_model_test(request: GroqConfigRequest):
         }
     
     except Exception as e:
+        log.error(f'[/ollama/model] Error: {e}')
         raise HTTPException(status_code=500, detail=f"Unable to establish connection with GROQ: {str(e)}")
     
 @app.post("/ollama/model", response_model=ModelStatusCheck)
@@ -84,6 +93,8 @@ async def ollama_model_test(request: OllamaConfigRequest):
             "model_name": request.model_name
         }
 
+        log.info(f'[/ollama/model] ModelName: {request.model_name} \nTest Response: {test_responce.content}')  # Log
+        
         return{
             "success" : True,
             "message" : "Ollama is Connected",
@@ -92,6 +103,7 @@ async def ollama_model_test(request: OllamaConfigRequest):
         }
     
     except Exception as e:
+        log.error(f'[/ollama/model] Error: {e}')
         raise HTTPException(status_code=500, detail=f"Unable to establish connection with Ollama: {str(e)}")
 
 @app.get("/model_config")
@@ -103,6 +115,7 @@ async def get_current_model_config():
         if not current_model:
             raise HTTPException(status_code=400, detail="No model configured")
         
+        log.info(f'[/model_config] {current_config}')  #Log
         return {"config": current_config, "model_ready": True}
 
     except Exception as e:
@@ -112,6 +125,8 @@ async def get_current_model_config():
 async def get_current_model():
     """Get Current Model Instance"""
     global current_model
+
+    log.info(f'[/current_model] {current_model}')
     return {'current_model': current_model}
 
 @app.delete("/config_reset")
@@ -121,7 +136,7 @@ async def reset_config():
     
     current_model = None
     current_config = {}
-    
+    log.info('[reset_config] Configuration reset. Successfully!')  # Log
     return {"message": "Configuration reset successfully"}
 
 from src.backend.agent_tool import graph
@@ -129,15 +144,24 @@ from src.backend.agent_tool import graph
 async def chat(request:User_Message):
     try:
         workflow = graph()
-        response = workflow.invoke(input={'user_input':request.user_input},config= request.config)
-        print(f'[/invoke] user_input: {request.user_input} \t config: {request.config}')
-        print(f'[/invoke] response: {response}')
+        global current_model
+        log.info(f'[/invoke] UserInput: {request.user_input}')  # Log
+        response = workflow.invoke(input={'user_input':request.user_input, 'model': current_model},config= request.config)
+        log.info(f'[/invoke] Response: {response}') # Log
+
+        # --- Serialize response ---
+        # If response is a dict with 'response' as AIMessage, convert to string
+        if isinstance(response, dict) and 'response' in response:
+            content = str(response['response'].content) if hasattr(response['response'], 'content') else str(response['response'])
+        else:
+            content = str(response)
+
         return {
-            "response" : response,
+            "response" : content,
             "success" : True
         }
     except Exception as e:
-        print(f'[/invoke] {e}')
+        log.error(f'[/invoke] {e}')
         return {
             "response" : "",
             "success" : False,
