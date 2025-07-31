@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.10
 WORKDIR /Maths_problem
 COPY . /Maths_problem
 EXPOSE 8501 8000
