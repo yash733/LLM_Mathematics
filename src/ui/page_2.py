@@ -74,6 +74,7 @@ def page_2_ui():
                                                 {'role':'ai','content':result['response']}])
                 st.rerun()
         else:
-            st.error("⚠️ Please add a question into to proceed further.")
+            if st.session_state.message_history >= 1: 
+                st.error("⚠️ Please add a question into to proceed further.")
     except Exception as e:
         log.error(f'[page_2_ui] Error: {e}')

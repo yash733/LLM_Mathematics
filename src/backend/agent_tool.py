@@ -90,15 +90,15 @@ def get_tools():
     log.info(f'[get_tools] Tools: {tools}')
     return tools
 
-def LLM(state: State):
+def LLM(state: State)-> State:
     try:
         if not state.get('model'):
             log.error('[LLM] No model instance found in state')  #log
             return {'response': 'No model instance found. Please reconfigure.', 'messages': []}
         
         prompt = PromptTemplate(template="""
-                                            Your a agent tasked for solving users mathemtical question. Logically arrive at the solution and provide a detailed explanation
-                                            and display it point wise for the question below
+                                            Your a agent tasked for solving users mathemtical question. Break the question into smaller parts make use of looks.
+                                            Logically arrive at the solution and provide a detailed explanation and display it point wise for the question below.
                                             Question:{question}
                                             Answer:                                
                                         """,
@@ -110,11 +110,9 @@ def LLM(state: State):
         model = state.get('model')
         model_with_tool = model.bind_tools(tools)
         
-        # Handle conversation flow better
         if state.get('messages') and len(state['messages']) > 0:
             # Continue conversation with existing messages
-            messages = state['messages'] + [prompt_formatted] if isinstance(state['messages'], list) else [state['messages'], prompt_formatted]
-            response = model_with_tool.invoke(messages)
+            response = model_with_tool.invoke(state['messages'])
         else:
             # Start new conversation
             response = model_with_tool.invoke(prompt_formatted)

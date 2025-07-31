@@ -52,7 +52,7 @@ def configure_groq(api_key, model_name):
         response = requests.post(f"{API_BASE_URL}/groq/model", json=payload)  
         log.info(f'[configure_groq] payload: {payload} \nResponse: {response}')  #log
         if response.status_code==200:
-            st.session_state.current_config = {"model_detail" : response.json()["config"]}
+            st.session_state.current_config = {"model_detail" : response.json()}
             return True
         else:
             log.error(f'[configure_groq] Error Occured Unable to get Selected Model, from Provider: {response}')  #log
@@ -104,6 +104,9 @@ def sidebar_():
             st.markdown("## Selected Configuration: ")
             st.write(f"**Model**: {st.session_state.current_config['model_detail']['config']['provider']}")
             st.write(f"**Model Type**: {st.session_state.current_config['model_detail']['config']['model_name']}")
+            
+            # st.write(f"**Model**: {st.session_state.current_config['model_detail']}")
+            # st.write(f"**Model Type**: {st.session_state.current_config['model_detail']}")
             
             if st.button('Reset Config'):
                 log.info('[sidebar_] Reset Config')  #log
